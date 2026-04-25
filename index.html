@@ -3,94 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VidYou IPTV PRO</title>
+    <title>VidYou IPTV PRO - V2</title>
+    
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(90deg, #4b0082, #ff4500); border-bottom: 2px solid #ff4500; }
-        #player-wrapper { position: relative; width: 100%; flex: 1; background: #000; }
-        video { width: 100%; height: 100%; }
-        .seta-canais { position: absolute; top: 20px; left: 20px; z-index: 200; background: rgba(0,0,0,0.7); color: #ff4500; border: 2px solid #ff4500; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; }
-        #gaveta { position: absolute; top: 0; left: -310px; width: 300px; height: 100%; background: #0a0a0a; z-index: 300; transition: 0.4s; border-right: 3px solid #ff4500; display: flex; flex-direction: column; }
+        header { 
+            padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; 
+            background: linear-gradient(90deg, #4b0082, #ff4500); 
+            border-bottom: 2px solid #ff4500; z-index: 100;
+        }
+        .btn-header { background: #000; border: 1px solid #ff4500; color: #ff4500; padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .btn-cast-active { border-color: #00ff00; color: #00ff00; }
+        
+        #player-wrapper { position: relative; width: 100%; flex: 1; background: #000; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+        .seta-canais {
+            position: absolute; top: 20px; left: 20px; z-index: 200;
+            background: rgba(0, 0, 0, 0.7); color: #ff4500; border: 2px solid #ff4500;
+            width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease; opacity: 1;
+        }
+        .seta-canais.invisivel { opacity: 0; pointer-events: none; }
+
+        #gaveta {
+            position: absolute; top: 0; left: -310px; width: 300px; height: 100%;
+            background: rgba(10, 10, 10, 0.98); z-index: 2147483647; transition: 0.4s;
+            border-right: 3px solid #ff4500; overflow-y: hidden; display: flex; flex-direction: column;
+        }
         #gaveta.ativa { left: 0; }
-        .tabs-container { display: flex; padding: 10px; gap: 5px; }
-        .tab-btn { flex: 1; padding: 10px 5px; font-size: 10px; font-weight: bold; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; }
-        .tab-btn.active { background: #ff4500; color: #000; }
-        #itens-canais { flex: 1; overflow-y: auto; }
-        .canal-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .canal-logo { width: 60px; height: 60px; object-fit: contain; background: #fff; border-radius: 5px; }
+        
+        .search-container { padding: 10px; background: #1a1a1a; }
+        #search-input { 
+            width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ff4500; 
+            background: #000; color: #fff; box-sizing: border-box; outline: none; margin-bottom: 10px;
+        }
+        
+        .tabs-container { display: flex; gap: 5px; padding: 0 10px 10px; border-bottom: 1px solid #333; }
+        .tab-btn { 
+            flex: 1; padding: 8px 2px; font-size: 0.7rem; font-weight: bold; 
+            background: #222; border: 1px solid #444; color: #aaa; border-radius: 4px; cursor: pointer;
+            text-transform: uppercase;
+        }
+        .tab-btn.active { background: #ff4500; color: #000; border-color: #fff; }
+
+        #itens-canais { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+        
+        .canal-item { padding: 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 15px; }
+        .canal-item:hover { background: #ff4500; color: #000; font-weight: bold; }
+        .canal-logo { width: 100px; height: 100px; border-radius: 8px; object-fit: contain; background: #fff; flex-shrink: 0; }
+        .canal-item span { font-size: 1.15rem; }
+        
+        #itens-canais::-webkit-scrollbar { width: 6px; }
+        #itens-canais::-webkit-scrollbar-thumb { background: #ff4500; border-radius: 10px; }
     </style>
 </head>
 <body>
-<header><div style="font-weight: 900;">VidYou IPTV PRO</div></header>
+
+<header>
+    <div style="font-weight: 900; color: #fff; font-size: 1.2rem;">VidYou <span style="color:#000">IPTV</span></div>
+    <div style="display:flex; gap:5px;">
+        <button class="btn-header" id="btnConectarTV" onclick="conectarTV()">📺 CONECTAR TV</button>
+        <button class="btn-header" onclick="toggleFS()">⛶ TELA</button>
+        <button class="btn-header" onclick="document.getElementById('file-input').click()">📁 ABRIR</button>
+    </div>
+    <input type="file" id="file-input" style="display:none" onchange="carregarLocal(event)">
+</header>
+
 <div id="player-wrapper">
-    <video id="vid" controls autoplay></video>
-    <button class="seta-canais" onclick="document.getElementById('gaveta').classList.add('ativa')">▼</button>
+    <video id="vid" controls autoplay playsinline></video>
+    <button class="seta-canais" id="botaoSeta" onclick="abrirGaveta()">▼</button>
+    
     <div id="gaveta">
-        <div style="padding:15px; background:#ff4500; color:#000; font-weight:bold; cursor:pointer;" onclick="this.parentElement.classList.remove('ativa')">FECHAR X</div>
-        <div class="tabs-container">
-            <button class="tab-btn active" id="t-tv" onclick="setTab('tv')">TV ONLINE</button>
-            <button class="tab-btn" id="t-filmes" onclick="setTab('filmes')">FILMES</button>
-            <button class="tab-btn" id="t-series" onclick="setTab('series')">SÉRIES</button>
+        <div style="padding:15px; background:#ff4500; color:#000; font-weight:bold; cursor:pointer; text-align:center;" onclick="fecharGaveta()">FECHAR MENU X</div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="🔍 Buscar..." onkeyup="filtrarGeral()">
         </div>
+
+        <div class="tabs-container">
+            <button class="tab-btn active" id="btn-tv" onclick="setTab('tv')">📺 TV Online</button>
+            <button class="tab-btn" id="btn-filmes" onclick="setTab('filmes')">🎬 Filmes</button>
+            <button class="tab-btn" id="btn-series" onclick="setTab('series')">🍿 Séries</button>
+        </div>
+
         <div id="itens-canais"></div>
     </div>
 </div>
+
 <script>
-    const URL_LISTA_TXT = "https://raw.githubusercontent.com/Roneiltonsouza/vidyouiptvpro/main/lista.txt";
-    let listaCanais = []; let abaAtual = 'tv'; let hls = null; const video = document.getElementById('vid');
-    async function carregar() {
-        try {
-            const r = await fetch(URL_LISTA_TXT + "?t=" + Date.now());
-            const urlM3U = (await r.text()).trim();
-            const rm3u = await fetch(urlM3U);
-            const texto = await rm3u.text();
-            parse(texto);
-        } catch(e) { console.log(e); }
+    let castSession = null;
+
+    window['__onGCastApiAvailable'] = function(isAvailable) {
+        if (isAvailable) {
+            const sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID);
+            const apiConfig = new chrome.cast.ApiConfig(sessionRequest, 
+                (session) => { 
+                    castSession = session; 
+                    document.getElementById('btnConectarTV').classList.add('btn-cast-active');
+                    document.getElementById('btnConectarTV').innerText = "📺 CONECTADO";
+                }, 
+                (availability) => {
+                    if(availability === chrome.cast.ReceiverAvailability.AVAILABLE) {
+                        console.log("TV Encontrada!");
+                    }
+                }
+            );
+            chrome.cast.initialize(apiConfig);
+        }
+    };
+
+    function conectarTV() {
+        chrome.cast.requestSession((session) => {
+            castSession = session;
+            document.getElementById('btnConectarTV').classList.add('btn-cast-active');
+            document.getElementById('btnConectarTV').innerText = "📺 CONECTADO";
+        }, (err) => { console.log("Busca cancelada."); });
     }
-    function parse(data) {
-        const lines = data.split('\n'); listaCanais = [];
+
+    function transmitirCanal(urlDoCanal, nomeDoCanal) {
+        if (!castSession) return;
+        const mediaInfo = new chrome.cast.media.MediaInfo(urlDoCanal, 'application/x-mpegURL');
+        mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+        mediaInfo.metadata.title = nomeDoCanal;
+        const request = new chrome.cast.media.LoadRequest(mediaInfo);
+        castSession.loadMedia(request, 
+            () => { console.log("Transmitindo: " + nomeDoCanal); },
+            (error) => { console.log("Erro na TV"); }
+        );
+    }
+
+    // NOME DO REPOSITÓRIO CORRIGIDO PARA vidyouiptvpro
+    const URL_GITHUB = "https://raw.githubusercontent.com/Roneiltonsouza/vidyouiptvpro/main/lista.txt";
+    const video = document.getElementById('vid');
+    const wrapper = document.getElementById('player-wrapper');
+    const seta = document.getElementById('botaoSeta');
+    
+    let hls = null;
+    let listaCanais = [];
+    let abaAtual = 'tv';
+    let timerUI;
+
+    function configurarPlayer(url) {
+        if (hls) { hls.destroy(); }
+        if (url.includes('.m3u8')) {
+            if (Hls.isSupported()) {
+                hls = new Hls({ maxBufferLength: 30, lowLatencyMode: true });
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.play();
+            }
+        } else {
+            video.src = url;
+            video.play();
+        }
+    }
+
+    async function buscarLista() {
+        try {
+            const resLink = await fetch(URL_GITHUB + "?t=" + Date.now());
+            const linkReal = (await resLink.text()).trim();
+            if (linkReal.startsWith("http")) {
+                const resM3U = await fetch(linkReal);
+                const text = await resM3U.text();
+                if(text.includes("#EXTM3U")) parseM3U(text);
+            }
+        } catch (e) { console.log("Erro na lista."); }
+    }
+
+    function parseM3U(text) {
+        const lines = text.split('\n');
+        listaCanais = [];
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].includes('#EXTINF')) {
-                const nome = lines[i].split(',')[1] || "Canal";
-                const logo = lines[i].match(/tvg-logo="([^"]+)"/)?.[1] || '';
-                const group = lines[i].match(/group-title="([^"]+)"/)?.[1] || '';
+                const nome = lines[i].split(',')[1] || "Sem Nome";
+                const logo = lines[i].match(/tvg-logo="([^"]+)"/)?.[1] || 'https://via.placeholder.com/100';
+                const grupo = lines[i].match(/group-title="([^"]+)"/)?.[1] || "";
                 const link = lines[i+1]?.trim();
+                
                 if (link && link.startsWith('http')) {
-                    let tipo = 'tv';
-                    const s = (nome + group).toLowerCase();
-                    if (s.includes('filme') || s.includes('cinema')) tipo = 'filmes';
-                    else if (s.includes('série') || s.includes('series')) tipo = 'series';
+                    let tipo = 'tv'; // PADRÃO É TV ONLINE
+                    const lowerInfo = (nome + grupo).toLowerCase();
+                    // SEPARAÇÃO MELHORADA
+                    if (lowerInfo.includes('filme') || lowerInfo.includes('cinema')) tipo = 'filmes';
+                    else if (lowerInfo.includes('série') || lowerInfo.includes('series')) tipo = 'series';
+                    
                     listaCanais.push({ nome, logo, link, tipo });
                 }
             }
         }
-        render();
+        filtrarGeral();
     }
-    function setTab(t) {
-        abaAtual = t;
+
+    function setTab(tab) {
+        abaAtual = tab;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('t-' + t).classList.add('active');
-        render();
+        document.getElementById('btn-' + tab).classList.add('active');
+        filtrarGeral();
     }
-    function render() {
+
+    function filtrarGeral() {
+        const termo = document.getElementById('search-input').value.toLowerCase();
+        const filtrados = listaCanais.filter(c => (c.nome.toLowerCase().includes(termo) && c.tipo === abaAtual));
+        renderizar(filtrados);
+    }
+
+    function renderizar(canais) {
         const container = document.getElementById('itens-canais');
-        const filtrados = listaCanais.filter(c => c.tipo === abaAtual);
-        container.innerHTML = filtrados.map(c => `
-            <div class="canal-item" onclick="play('${c.link}')">
-                <img src="${c.logo}" class="canal-logo" onerror="this.src='https://via.placeholder.com/60'">
+        container.innerHTML = canais.map((c) => `
+            <div class="canal-item" onclick="tocarDireto('${c.link}', '${c.nome}')">
+                <img src="${c.logo}" class="canal-logo" onerror="this.src='https://via.placeholder.com/100'">
                 <span>${c.nome}</span>
-            </div>`).join('');
+            </div>
+        `).join('');
     }
-    function play(url) {
-        if (hls) hls.destroy();
-        if (Hls.isSupported()) {
-            hls = new Hls(); hls.loadSource(url); hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-        } else { video.src = url; }
-        document.getElementById('gaveta').classList.remove('ativa');
+
+    function tocarDireto(url, nome) {
+        configurarPlayer(url);
+        transmitirCanal(url, nome);
+        fecharGaveta();
     }
-    window.onload = carregar;
+
+    function resetTimer() {
+        seta.classList.remove('invisivel');
+        clearTimeout(timerUI);
+        timerUI = setTimeout(() => { if(!document.getElementById('gaveta').classList.contains('ativa')) seta.classList.add('invisivel'); }, 5000);
+    }
+
+    function toggleFS() {
+        if (!document.fullscreenElement) wrapper.requestFullscreen();
+        else document.exitFullscreen();
+    }
+
+    function abrirGaveta() { document.getElementById('gaveta').classList.add('ativa'); document.getElementById('search-input').focus(); }
+    function fecharGaveta() { document.getElementById('gaveta').classList.remove('ativa'); resetTimer(); }
+    function carregarLocal(e) { if (e.target.files[0]) { video.src = URL.createObjectURL(e.target.files[0]); video.play(); } }
+
+    wrapper.addEventListener('mousemove', resetTimer);
+    wrapper.addEventListener('touchstart', resetTimer);
+
+    window.onload = () => { buscarLista(); setInterval(buscarLista, 60000); resetTimer(); };
 </script>
 </body>
 </html>
